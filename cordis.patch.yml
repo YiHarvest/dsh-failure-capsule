@@ -1,0 +1,14 @@
+# dsh-failure-capsule profile bundle
+- insert:
+    - id: failure-capsule
+      name: dsh-failure-capsule
+      config:
+        outputDir: .dsh/failure-capsules
+        maxEvents: 80
+        maxGitBytes: 524288
+        captureGit: true
+        capturePlugins: true
+        triggerOnToolError: true
+        triggerOnTurnFailure: true
+        triggerOnAborted: false
+        triggerOnAgentError: true
