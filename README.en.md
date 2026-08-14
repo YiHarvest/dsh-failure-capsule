@@ -33,6 +33,8 @@ Capsules appear under the session workspace by default:
 
 The default triggers are failed `tool/result` events, `error` / `blocked` / `interrupted` turn endings, and live `agent/error` signals that have no durable failed-turn record. User cancellation is excluded unless `triggerOnAborted` is enabled.
 
+When a live agent error carries a minified JavaScript stack, the plugin resolves it back to original source using the project's local source maps, so the capsule records readable frames instead of one minified line.
+
 Each ZIP contains:
 
 | File | Evidence |
@@ -43,9 +45,11 @@ Each ZIP contains:
 | `diagnosis.md` | Deterministic, model-free triage entry points |
 | `runtime.json` | Node, OS, architecture, and project package metadata |
 | `plugins.json` | Loader entries, enabled state, and fiber phase |
+| `redaction-report.json` | Safe per-rule replacement counts |
+| `stack-trace.json` | Parsed stack frames and source-map resolution (when a stack is present) |
+| `stack-trace.md` | De-minified, readable frames with source context |
 | `session/header.json` | Session cwd, lineage, and format version |
 | `git/*` | HEAD, branch, status, recent commits, working-tree diff, staged diff |
-| `redaction-report.json` | Safe per-rule replacement counts |
 
 Git collection is read-only and shell-free. It does not inspect untracked file contents, run hooks, or run textconv. Each command has a 512 KiB output budget by default.
 
@@ -76,9 +80,11 @@ Override the bundle row with the same id in the profile patch:
     triggerOnTurnFailure: true
     triggerOnAborted: false
     triggerOnAgentError: true
+    resolveSourceMaps: true
+    maxSourceMapBytes: 4194304
 ```
 
-Relative `outputDir` values resolve from the session cwd. `maxEvents` accepts `1..10000`; `maxGitBytes` accepts `1024..16777216`. Invalid configuration fails plugin load.
+Relative `outputDir` values resolve from the session cwd. `maxEvents` accepts `1..10000`; `maxGitBytes` accepts `1024..16777216`; `maxSourceMapBytes` accepts `1024..67108864`. Invalid configuration fails plugin load.
 
 ## Development
 
@@ -90,7 +96,7 @@ npm run check
 npm pack
 ```
 
-Tests cover redaction, failure classification, configuration limits, bounded Git collection, deterministic ZIP output, atomic writes, and safe filenames. `prepack` reruns type checking, tests, and the build.
+Tests cover redaction, failure classification, configuration limits, bounded Git collection, source-map stack resolution, deterministic ZIP output, atomic writes, and safe filenames. `prepack` reruns type checking, tests, and the build.
 
 The repository uses the `dsh-plugin` topic and declares `dsh.bundle.patch`, so the [Awesome DSH Plugins Radar](https://github.com/AdamPlatin123/awesome-dsh-plugins) can discover it automatically.
 

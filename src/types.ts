@@ -22,6 +22,8 @@ export interface FailureTrigger {
     name: string
     code: string
     message: string
+    /** Raw `Error.stack` captured when the failure carried one. */
+    stack?: string
   }
 }
 
@@ -45,6 +47,10 @@ export interface Config {
   triggerOnAborted?: boolean
   /** Capture live agent errors that never receive a durable failed turn. */
   triggerOnAgentError?: boolean
+  /** Resolve minified JS stack frames against local source maps. */
+  resolveSourceMaps?: boolean
+  /** Maximum bytes read from a single source map file. */
+  maxSourceMapBytes?: number
 }
 
 /** Fully defaulted, validated plugin configuration. */
@@ -58,6 +64,8 @@ export interface ResolvedConfig {
   triggerOnTurnFailure: boolean
   triggerOnAborted: boolean
   triggerOnAgentError: boolean
+  resolveSourceMaps: boolean
+  maxSourceMapBytes: number
 }
 
 /** Stable projection of one Loader entry. */
@@ -100,6 +108,7 @@ export interface CapsuleManifest {
   evidence: {
     git: boolean
     plugins: boolean
+    stackTrace: boolean
   }
   redaction: RedactionReport
   files: string[]

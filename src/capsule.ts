@@ -4,6 +4,8 @@ import { randomUUID } from 'node:crypto'
 import { strToU8, zipSync } from 'fflate'
 import { collectGitEvidence, collectRuntimeEvidence } from './evidence.ts'
 import { Redactor } from './redaction.ts'
+import { renderStackTrace, resolveStack } from './sourcemap.ts'
+import type { ResolvedStack } from './sourcemap.ts'
 import type {
   CapsuleManifest,
   CapsuleRequest,
@@ -13,7 +15,7 @@ import type {
 } from './types.ts'
 
 /** Package version embedded in every archive. Kept in sync by a test. */
-export const VERSION = '0.1.0'
+export const VERSION = '0.2.0'
 
 const ZIP_TIME = new Date('1980-01-01T00:00:00.000Z')
 
@@ -109,6 +111,10 @@ export async function buildCapsuleArchive(request: CapsuleRequest): Promise<Caps
   const safeHeader = redactor.value(request.session.header)
   const capturedAt = new Date(request.trigger.time).toISOString()
   const runtime = redactor.value(await collectRuntimeEvidence(cwd, VERSION, capturedAt, plugins))
+  const rawStack = request.trigger.error?.stack
+  const stackTrace = request.config.resolveSourceMaps && typeof rawStack === 'string'
+    ? await resolveStack(rawStack, { root: cwd, maxBytes: request.config.maxSourceMapBytes })
+    : undefined
   const files: Record<string, string> = {
     'failure.json': json(safeTrigger),
     'session/header.json': json(safeHeader),
@@ -122,6 +128,11 @@ export async function buildCapsuleArchive(request: CapsuleRequest): Promise<Caps
   }
   if (!git.available && request.config.captureGit) {
     files['git/unavailable.txt'] = redactor.text(`${git.error ?? 'Git evidence unavailable.'}\n`)
+  }
+  if (stackTrace !== undefined) {
+    const safeStack = redactor.value(stackTrace) as ResolvedStack
+    files['stack-trace.json'] = json(safeStack)
+    files['stack-trace.md'] = redactor.text(renderStackTrace(safeStack))
   }
 
   const redaction = redactor.report()
@@ -139,7 +150,7 @@ export async function buildCapsuleArchive(request: CapsuleRequest): Promise<Caps
       eventCount: request.session.events.length,
       capturedEventCount: safeEvents.length,
     },
-    evidence: { git: git.available, plugins: plugins !== undefined },
+    evidence: { git: git.available, plugins: plugins !== undefined, stackTrace: stackTrace !== undefined },
     redaction,
     files: manifestFiles,
   }

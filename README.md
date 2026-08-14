@@ -36,7 +36,7 @@ dsh --profile web --dump-config
 
 ## 它解决什么问题
 
-普通错误日志往往只有“最后哪里炸了”，但 Coding Agent 的失败通常依赖一整段过程：模型请求、工具调用、权限、工作树变化、运行时以及插件组合。Failure Capsule 把这些信号放在同一个离线证据包里：
+普通错误日志往往只有“最后哪里炸了”，但 Coding Agent 的失败通常依赖一整段过程：模型请求、工具调用、权限、工作树变化、运行时以及插件组合。当失败携带压缩后的 JS 栈（如 `agent/error`）时，插件还会用项目里的本地 source map 把它反解回原始源码位置，而不是只保留一行压缩栈。Failure Capsule 把这些信号放在同一个离线证据包里：
 
 ```mermaid
 flowchart LR
@@ -71,6 +71,8 @@ failure-capsule.zip
 ├── runtime.json               # Node / OS / 项目包信息
 ├── plugins.json               # Loader 插件、启用状态和 fiber 阶段
 ├── redaction-report.json      # 按规则统计；不包含原始秘密
+├── stack-trace.json           # 栈帧与 source map 反解结果（存在栈时）
+├── stack-trace.md             # 反混淆后的可读栈帧与源码上下文
 ├── session/
 │   └── header.json            # 会话 cwd、谱系和格式版本
 └── git/
@@ -112,6 +114,8 @@ Timeline 默认最多 80 条事件。每条 Git 命令默认最多采集 512 KiB
     triggerOnTurnFailure: true
     triggerOnAborted: false
     triggerOnAgentError: true
+    resolveSourceMaps: true
+    maxSourceMapBytes: 4194304
 ```
 
 | 字段 | 类型 | 默认值 | 作用 |
@@ -125,6 +129,8 @@ Timeline 默认最多 80 条事件。每条 Git 命令默认最多采集 512 KiB
 | `triggerOnTurnFailure` | boolean | `true` | error / blocked / interrupted 回合是否触发 |
 | `triggerOnAborted` | boolean | `false` | aborted 回合是否触发 |
 | `triggerOnAgentError` | boolean | `true` | 无持久化失败边界的 live error 是否触发 |
+| `resolveSourceMaps` | boolean | `true` | 是否用本地 source map 反解压缩后的 JS 栈帧 |
+| `maxSourceMapBytes` | integer | `4194304` | `1024..67108864`，单个 source map 文件的读取预算 |
 
 错误配置在插件加载时直接失败，不静默回退。相同 Session Event 在一个插件生命周期内只生成一次；`agent/error` 会短暂等待对应的 `turn/end`，避免同一失败重复打包。
 
@@ -138,13 +144,13 @@ npm run check
 npm pack
 ```
 
-测试覆盖脱敏、故障分类、配置边界、Git 采集预算、ZIP 确定性、原子写入和路径安全。发布包的 `prepack` 会重新执行 typecheck、测试与构建。
+测试覆盖脱敏、故障分类、配置边界、Git 采集预算、source map 栈帧反解、ZIP 确定性、原子写入和路径安全。发布包的 `prepack` 会重新执行 typecheck、测试与构建。
 
 从本地 tarball 验证真实 profile 安装：
 
 ```sh
 npm pack
-dsh plugin --profile web add ./dsh-failure-capsule-0.1.0.tgz
+dsh plugin --profile web add ./dsh-failure-capsule-0.2.0.tgz
 dsh --profile web --dump-config
 ```
 

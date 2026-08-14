@@ -1,3 +1,4 @@
+import { DEFAULT_MAX_SOURCE_MAP_BYTES } from './sourcemap.ts'
 import type { Config, ResolvedConfig } from './types.ts'
 
 /** Default output and evidence limits used by the Profile Bundle. */
@@ -11,6 +12,8 @@ export const DEFAULT_CONFIG: Readonly<ResolvedConfig> = Object.freeze({
   triggerOnTurnFailure: true,
   triggerOnAborted: false,
   triggerOnAgentError: true,
+  resolveSourceMaps: true,
+  maxSourceMapBytes: DEFAULT_MAX_SOURCE_MAP_BYTES,
 })
 
 function boundedInteger(name: string, value: number, minimum: number, maximum: number): number {
@@ -45,5 +48,12 @@ export function resolveConfig(config: Config = {}): ResolvedConfig {
     triggerOnTurnFailure: config.triggerOnTurnFailure ?? DEFAULT_CONFIG.triggerOnTurnFailure,
     triggerOnAborted: config.triggerOnAborted ?? DEFAULT_CONFIG.triggerOnAborted,
     triggerOnAgentError: config.triggerOnAgentError ?? DEFAULT_CONFIG.triggerOnAgentError,
+    resolveSourceMaps: config.resolveSourceMaps ?? DEFAULT_CONFIG.resolveSourceMaps,
+    maxSourceMapBytes: boundedInteger(
+      'maxSourceMapBytes',
+      config.maxSourceMapBytes ?? DEFAULT_CONFIG.maxSourceMapBytes,
+      1024,
+      64 * 1024 * 1024,
+    ),
   }
 }

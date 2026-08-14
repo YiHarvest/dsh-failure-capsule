@@ -15,5 +15,17 @@ describe('resolveConfig', () => {
     expect(() => resolveConfig({ maxEvents: 0 })).toThrow('maxEvents')
     expect(() => resolveConfig({ maxGitBytes: 999 })).toThrow('maxGitBytes')
     expect(() => resolveConfig({ maxEvents: 1.5 })).toThrow('maxEvents')
+    expect(() => resolveConfig({ maxSourceMapBytes: 100 })).toThrow('maxSourceMapBytes')
+  })
+
+  it('defaults source-map resolution on with a bounded budget', () => {
+    expect(resolveConfig()).toMatchObject({
+      resolveSourceMaps: true,
+      maxSourceMapBytes: 4 * 1024 * 1024,
+    })
+    expect(resolveConfig({ resolveSourceMaps: false, maxSourceMapBytes: 8192 })).toMatchObject({
+      resolveSourceMaps: false,
+      maxSourceMapBytes: 8192,
+    })
   })
 })
