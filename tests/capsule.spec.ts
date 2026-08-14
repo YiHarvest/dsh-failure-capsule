@@ -113,7 +113,7 @@ describe('capsule archive', () => {
     expect(allText).toContain('<redacted:token>')
     expect(first.manifest.session.capturedEventCount).toBe(2)
     expect(first.manifest.redaction.total).toBeGreaterThan(0)
-    expect(first.manifest.evidence).toEqual({ git: true, plugins: true })
+    expect(first.manifest.evidence).toEqual({ git: true, plugins: true, stackTrace: false })
   })
 
   it('writes atomically under a sanitized filename', async () => {

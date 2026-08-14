@@ -68,9 +68,10 @@ describe('failure classification', () => {
       .toMatchObject({ kind: 'turn-aborted' })
   })
 
-  it('normalizes arbitrary live agent errors', () => {
+  it('normalizes arbitrary live agent errors and keeps their stack', () => {
     const failure = Object.assign(new Error('network down'), { code: 'ECONNRESET' })
-    expect(agentErrorTrigger('s1', 2, 3, failure, 99)).toEqual({
+    const trigger = agentErrorTrigger('s1', 2, 3, failure, 99)
+    expect(trigger).toMatchObject({
       kind: 'agent-error',
       sessionId: 's1',
       time: 99,
@@ -79,5 +80,6 @@ describe('failure classification', () => {
       step: 3,
       error: { name: 'Error', code: 'ECONNRESET', message: 'network down' },
     })
+    expect(trigger.error?.stack).toContain('network down')
   })
 })

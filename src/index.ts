@@ -26,6 +26,14 @@ export { DEFAULT_CONFIG, resolveConfig } from './config.ts'
 export { collectGitEvidence, collectRuntimeEvidence, runBoundedCommand } from './evidence.ts'
 export { agentErrorTrigger, classifySessionFailure } from './failure.ts'
 export { Redactor } from './redaction.ts'
+export {
+  DEFAULT_CONTEXT_PADDING,
+  DEFAULT_MAX_SOURCE_MAP_BYTES,
+  parseStackFrames,
+  renderStackTrace,
+  resolveStack,
+} from './sourcemap.ts'
+export type { ResolvedFrame, ResolvedStack, SourceLine, SourceMapOptions, StackFrame } from './sourcemap.ts'
 export type * from './types.ts'
 
 /** Cordis plugin name shown in Loader diagnostics. */
@@ -45,6 +53,8 @@ export const Config: z<PluginConfig> = z.object({
   triggerOnTurnFailure: z.boolean(),
   triggerOnAborted: z.boolean(),
   triggerOnAgentError: z.boolean(),
+  resolveSourceMaps: z.boolean(),
+  maxSourceMapBytes: z.number(),
 })
 
 const PHASES = {

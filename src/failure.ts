@@ -96,6 +96,12 @@ export function agentErrorTrigger(
     && typeof error.code === 'string'
     ? error.code
     : 'UNKNOWN'
+  const stack = typeof error === 'object'
+    && error !== null
+    && 'stack' in error
+    && typeof error.stack === 'string'
+    ? error.stack
+    : undefined
   return {
     kind: 'agent-error',
     sessionId,
@@ -103,6 +109,11 @@ export function agentErrorTrigger(
     summary: message,
     turn,
     step,
-    error: { name, code, message },
+    error: {
+      name,
+      code,
+      message,
+      ...(stack === undefined ? {} : { stack }),
+    },
   }
 }

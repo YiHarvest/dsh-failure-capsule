@@ -12,3 +12,5 @@
         triggerOnTurnFailure: true
         triggerOnAborted: false
         triggerOnAgentError: true
+        resolveSourceMaps: true
+        maxSourceMapBytes: 4194304
