@@ -8,7 +8,7 @@ A local-first DeepSeek Harness plugin that turns a failed tool call or agent tur
 [![CI](https://github.com/YiHarvest/dsh-failure-capsule/actions/workflows/ci.yml/badge.svg)](https://github.com/YiHarvest/dsh-failure-capsule/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-> **Status:** standard Profile Bundle for `@deepseek-ai/dsh@0.1.0-rc.6`. It uses native `session/event` and `agent/error` extension points, never patches Harness core, never uploads data, and never calls a model for diagnosis.
+> **Status:** standard Profile Bundle verified against `@deepseek-ai/dsh@0.1.0-rc.7`. It uses native `session/event` and `agent/error` extension points, never patches Harness core, never uploads data, and never calls a model for diagnosis.
 
 ## Quick start
 
@@ -97,6 +97,17 @@ npm pack
 ```
 
 Tests cover redaction, failure classification, configuration limits, bounded Git collection, source-map stack resolution, deterministic ZIP output, atomic writes, and safe filenames. `prepack` reruns type checking, tests, and the build.
+
+## GitHub releases
+
+After merging to `main` and confirming CI is green, create a tag that matches the version in `package.json`:
+
+```sh
+git tag -a v0.2.1 -m "v0.2.1"
+git push origin v0.2.1
+```
+
+The tag triggers the release workflow, which reruns the full check, builds a verified `npm pack` tarball, and creates a GitHub Release with generated notes. A tag that does not match `package.json` is rejected.
 
 The repository uses the `dsh-plugin` topic and declares `dsh.bundle.patch`, so the [Awesome DSH Plugins Radar](https://github.com/AdamPlatin123/awesome-dsh-plugins) can discover it automatically.
 
