@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.2.1 - 2026-08-18
+
+- Verify the plugin against DeepSeek Harness `0.1.0-rc.7` and update the development dependency baseline.
+- Add CI coverage for the supported Node.js release lines.
+- Add a tag-driven GitHub Release workflow that validates the version and attaches the packed npm tarball.
+
 ## 0.2.0 - 2026-08-14
 
 - Resolve minified JavaScript stack traces back to original source using local source maps.

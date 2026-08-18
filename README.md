@@ -7,9 +7,9 @@ DeepSeek Harness 的本地优先故障证据包插件：当工具或 Agent 失�
 [![npm](https://img.shields.io/npm/v/dsh-failure-capsule.svg)](https://www.npmjs.com/package/dsh-failure-capsule)
 [![CI](https://github.com/YiHarvest/dsh-failure-capsule/actions/workflows/ci.yml/badge.svg)](https://github.com/YiHarvest/dsh-failure-capsule/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-0.1.0--rc.6-4f46e5)](https://github.com/deepseek-ai/deepseek-harness)
+[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-0.1.0--rc.7-4f46e5)](https://github.com/deepseek-ai/deepseek-harness)
 
-> **当前状态：** 可作为标准 Profile Bundle 安装；面向 `@deepseek-ai/dsh@0.1.0-rc.6` 的原生 `session/event` 与 `agent/error` 接口实现。插件不修改 Harness 核心，不上传数据，也不调用模型诊断故障。
+> **当前状态：** 可作为标准 Profile Bundle 安装；已针对 `@deepseek-ai/dsh@0.1.0-rc.7` 的原生 `session/event` 与 `agent/error` 接口验证。插件不修改 Harness 核心，不上传数据，也不调用模型诊断故障。
 
 ## 快速开始
 
@@ -150,9 +150,20 @@ npm pack
 
 ```sh
 npm pack
-dsh plugin --profile web add ./dsh-failure-capsule-0.2.0.tgz
+dsh plugin --profile web add ./dsh-failure-capsule-0.2.1.tgz
 dsh --profile web --dump-config
 ```
+
+## 发布 GitHub Release
+
+合并到 `main` 并确认 CI 通过后，创建与 `package.json` 版本一致的标签：
+
+```sh
+git tag -a v0.2.1 -m "v0.2.1"
+git push origin v0.2.1
+```
+
+标签会触发 Release 工作流，重新执行完整检查，生成经过 `npm pack` 验证的 `.tgz`，并创建带自动发行说明的 GitHub Release。工作流会拒绝与 `package.json` 版本不一致的标签。
 
 ## 生态发现
 
