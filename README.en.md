@@ -11,7 +11,7 @@ A local-first DeepSeek Harness plugin that seals failed agent work into a redact
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-0.1.2--alpha.2-4f46e5)](https://github.com/deepseek-ai/deepseek-harness)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-[npm](https://www.npmjs.com/package/dsh-failure-capsule) · [Changelog](CHANGELOG.md) · [简体中文](README.md)
+[npm](https://www.npmjs.com/package/dsh-failure-capsule) · [GitHub Packages](https://github.com/users/YiHarvest/packages?repo_name=dsh-failure-capsule) · [Changelog](CHANGELOG.md) · [简体中文](README.md)
 
 </div>
 
@@ -26,6 +26,13 @@ Web and headless are separate profiles. Install the bundle in every profile that
 ```bash
 dsh plugin --profile web add dsh-failure-capsule
 dsh plugin --profile headless add dsh-failure-capsule
+```
+
+The same release is also available from GitHub Packages as `@yiharvest/dsh-failure-capsule`. Authenticate with a classic personal access token carrying `read:packages`, then install the scoped bundle:
+
+```bash
+npm login --scope=@yiharvest --auth-type=legacy --registry=https://npm.pkg.github.com
+dsh plugin --profile web add @yiharvest/dsh-failure-capsule
 ```
 
 Confirm that the layer is present:
@@ -90,6 +97,9 @@ The bundle is ambient: install it, configure it if needed, then inspect the gene
 ```bash
 # Install from npm
 dsh plugin --profile web add dsh-failure-capsule
+
+# Or install the scoped release from GitHub Packages after npm login
+dsh plugin --profile web add @yiharvest/dsh-failure-capsule
 
 # Verify the composed profile
 dsh --profile web --dump-config
