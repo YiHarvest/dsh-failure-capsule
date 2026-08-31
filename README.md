@@ -1,105 +1,155 @@
+<div align="center">
+
 # dsh-failure-capsule
 
-DeepSeek Harness 的本地优先故障证据包插件：当工具或 Agent 失败时，自动把**失败前发生了什么、项目当时是什么状态、运行环境和插件组合是什么**整理成一个经过脱敏的 ZIP。
+**在上下文消失之前，封存失败证据。**
 
-[English](README.en.md)
+一个本地优先的 DeepSeek Harness 插件，把失败的 Agent 工作整理成经过脱敏、可审阅的证据 ZIP。
 
 [![npm](https://img.shields.io/npm/v/dsh-failure-capsule.svg)](https://www.npmjs.com/package/dsh-failure-capsule)
 [![CI](https://github.com/YiHarvest/dsh-failure-capsule/actions/workflows/ci.yml/badge.svg)](https://github.com/YiHarvest/dsh-failure-capsule/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-0.1.0--rc.7-4f46e5)](https://github.com/deepseek-ai/deepseek-harness)
+[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-0.1.2--alpha.2-4f46e5)](https://github.com/deepseek-ai/deepseek-harness)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> **当前状态：** 可作为标准 Profile Bundle 安装；已针对 `@deepseek-ai/dsh@0.1.0-rc.7` 的原生 `session/event` 与 `agent/error` 接口验证。插件不修改 Harness 核心，不上传数据，也不调用模型诊断故障。
+[npm](https://www.npmjs.com/package/dsh-failure-capsule) · [更新记录](CHANGELOG.md) · [English](README.en.md)
 
-## 快速开始
+</div>
 
-为使用中的 profile 安装插件。Web 与 headless 是两个独立 profile，需要分别安装：
+> **发布状态：** v0.2.2 是标准 Profile Bundle，已针对 `@deepseek-ai/dsh@0.1.2-alpha.2` 验证。它通过原生 `session/event`、`agent/error` 和 Loader inventory 接口工作，不修改 Harness 核心。采集只在本地进行，不调用模型，也没有遥测后端。
 
-```sh
+<img src="assets/failure-capsule-demo.svg" alt="Harness 失败事件被采集、在本地脱敏，并封装为包含时间线、Git 状态、运行时、插件和源码映射栈的 Failure Capsule ZIP。">
+
+## 体验当前版本
+
+Web 和 headless 是彼此独立的 profile。需要在哪个 profile 捕获失败，就在哪个 profile 安装：
+
+```bash
 dsh plugin --profile web add dsh-failure-capsule
 dsh plugin --profile headless add dsh-failure-capsule
 ```
 
-验证组合层：
+确认组合层已经生效：
 
-```sh
+```bash
 dsh --profile web --dump-config
-# 输出中应出现 id: failure-capsule / name: dsh-failure-capsule
+# 查找：id: failure-capsule / name: dsh-failure-capsule
 ```
 
-随后正常使用 DSH。失败发生时，插件默认把证据包写入当前项目：
+安装后不需要运行额外命令。继续正常使用 Harness；匹配的失败会在 Session 工作目录下写入证据包：
 
 ```text
 .dsh/failure-capsules/
-└── 2026-08-14T08-20-31-123Z_<session>_tool-error_event-42.zip
+└── 2026-08-31T01-23-45-678Z_<session>_tool-error_event-87.zip
 ```
 
-## 它解决什么问题
+## 核心想法
 
-普通错误日志往往只有“最后哪里炸了”，但 Coding Agent 的失败通常依赖一整段过程：模型请求、工具调用、权限、工作树变化、运行时以及插件组合。当失败携带压缩后的 JS 栈（如 `agent/error`）时，插件还会用项目里的本地 source map 把它反解回原始源码位置，而不是只保留一行压缩栈。Failure Capsule 把这些信号放在同一个离线证据包里：
+最后一行报错通常解释不了 Agent 为什么失败。真正有用的上下文散落在此前的工具调用、回合边界、仓库状态、运行环境、活动插件里，有时还藏在一段压缩后的 JavaScript 栈中。
 
-```mermaid
-flowchart LR
-  A[Harness session events] --> D[Failure detector]
-  B[Git evidence] --> E[Evidence builder]
-  C[Runtime and plugins] --> E
-  D --> F[Bounded failure window]
-  F --> E
-  E --> R[Secret redaction]
-  R --> Z[failure-capsule.zip]
-```
+Failure Capsule 会在这些上下文仍然存在时把它们保存下来：
 
-默认捕获以下故障：
+1. 监听 Harness 原生的持久化或实时失败信号。
+2. 截取有界的 Session 与环境证据窗口。
+3. 存在 JavaScript 栈时，使用本地 source map 还原源码位置。
+4. 只对导出副本中的凭据、本机路径和敏感字段进行脱敏。
+5. 写出一份确定性、自带索引、便于审阅或分享的 ZIP。
 
-| 信号 | 默认 | 说明 |
+## 为什么还需要一个调试工具？
+
+| 工具类别 | 通常保留什么 | Failure Capsule 补充什么 |
+|---|---|---|
+| 终端输出 | 最后一条命令及其 stderr | 导致失败的 Agent 时间线 |
+| Harness Session Log | 持久化交互事件 | Git、运行时、插件清单、排查入口和单一便携归档 |
+| 错误追踪平台 | 上传到后端的异常 | 无需服务或账号的本地采集 |
+| Harness 核心埋点补丁 | 产品内部状态 | 建立在公开扩展点上的可移除 Profile Bundle |
+| **Failure Capsule** | **一次失败工具调用或失败回合** | **故障发生时的一份有界、脱敏证据包** |
+
+它不是错误追踪平台、日志上传器或 AI 诊断服务。它负责准备人或其他工具进行调查所需的证据。
+
+## 保持启用
+
+Profile 安装是持久的，但各 profile 彼此独立。在 `web` 安装不会自动为 `headless` 启用，反之亦然。
+
+默认触发范围经过刻意收敛：
+
+| 信号 | 默认 | 结果 |
 |---|---:|---|
-| `tool/result` 且 `isError=true` | ✅ | 每个失败工具调用各生成一份 |
-| `turn/end` / `error` | ✅ | 模型、传输或 Agent 回合失败 |
-| `turn/end` / `blocked` | ✅ | 回合被策略或流程阻塞 |
-| `turn/end` / `interrupted` | ✅ | 上个进程未能正常关闭回合 |
-| `agent/error` | ✅ | 没有落入持久化失败回合的运行时错误 |
-| `turn/end` / `aborted` | ❌ | 用户取消默认不视为故障，可配置开启 |
+| 失败的 `tool/result` | 开 | 每次失败工具调用生成一份 capsule |
+| `turn/end` / `error` | 开 | 捕获模型、传输或 Agent 回合失败 |
+| `turn/end` / `blocked` | 开 | 捕获策略或工作流阻塞 |
+| `turn/end` / `interrupted` | 开 | 捕获被先前进程遗留为未闭合的回合 |
+| 没有持久化失败回合的实时 `agent/error` | 开 | 捕获否则会消失的运行时错误 |
+| `turn/end` / `aborted` | 关 | 用户取消只有显式启用后才会捕获 |
 
-## ZIP 内容
+同一事件在插件生命周期内只处理一次。实时 `agent/error` 会短暂等待相应的持久化 `turn/end`，避免同一次失败生成两个归档。
 
-```text
-failure-capsule.zip
-├── manifest.json              # schema、触发点、证据清单、脱敏计数
-├── failure.json               # 结构化失败身份
-├── timeline.jsonl             # 失败点之前的有界 Session Event 窗口
-├── diagnosis.md               # 确定性、无模型的排查入口
-├── runtime.json               # Node / OS / 项目包信息
-├── plugins.json               # Loader 插件、启用状态和 fiber 阶段
-├── redaction-report.json      # 按规则统计；不包含原始秘密
-├── stack-trace.json           # 栈帧与 source map 反解结果（存在栈时）
-├── stack-trace.md             # 反混淆后的可读栈帧与源码上下文
-├── session/
-│   └── header.json            # 会话 cwd、谱系和格式版本
-└── git/
-    ├── head.txt
-    ├── branch.txt
-    ├── status.txt
-    ├── recent-commits.txt
-    ├── working-tree.patch
-    └── index.patch
+## 使用当前插件
+
+这个 bundle 是常驻观察型插件：安装、按需配置，然后使用普通解压和文本工具检查生成的 ZIP。
+
+```bash
+# 从 npm 安装
+dsh plugin --profile web add dsh-failure-capsule
+
+# 验证最终组合配置
+dsh --profile web --dump-config
+
+# 测试尚未发布的本地构建
+npm pack
+dsh plugin --profile web add ./dsh-failure-capsule-0.2.2.tgz
 ```
 
-Timeline 默认最多 80 条事件。每条 Git 命令默认最多采集 512 KiB；达到预算会终止命令并明确标注截断。Git 通过参数数组直接执行，不经过 shell，不读取未跟踪文件内容，也不运行 hook 或 textconv。
+相对输出路径以 Session 工作目录为基准；也可以使用绝对路径。
 
-## 安全模型
+## v0.2.2 提供什么
 
-- **Local-first：** ZIP 只写本机；插件没有网络请求和遥测后端。
-- **导出副本脱敏：** 原始 Session Log 和工作树不被改写。
-- **默认脱敏：** 敏感字段、Bearer/Basic 凭据、常见 provider/GitHub/npm token、AWS access key、环境变量赋值、URL 用户密码、私钥块和本机路径。
-- **有界采集：** Session Event 数量和每个 Git 输出都有硬上限。
-- **错误隔离：** 证据生成失败只写 Harness warning，不改变 Agent 的原始失败或后续运行。
-- **安全停止：** 插件卸载时会等待已启动的证据包写入结束。
+| 已交付能力 | 发布证据 |
+|---|---|
+| Harness `0.1.2-alpha.2` 兼容性 | 针对已发布包的类型检查和真实 Cordis `SessionStore` 集成测试 |
+| 工具失败、回合失败、中断、阻塞和实时 Agent 错误触发 | 聚焦的分类与生命周期测试 |
+| 有界时间线、Git、运行时和插件证据 | 确定性 ZIP 断言与命令预算测试 |
+| 本地 source map 解析 | 栈帧解析、映射、缺失映射与大小限制测试 |
+| 凭据与路径脱敏 | 规则级脱敏测试和归档级断言 |
+| 原子写入与卸载排空 | 文件系统和插件销毁集成覆盖 |
 
-> 自动脱敏不能证明 ZIP 中绝对没有业务秘密。分享前仍应人工检查，尤其是自由文本、源代码 diff 和自定义插件事件。
+归档 schema 仍为版本 `1`；v0.2.2 更新了已验证的 Harness 依赖基线，没有改变 capsule 格式。
+
+## Capsule 如何工作
+
+`session/event` 是持久化事实来源。失败工具结果与终止回合原因可以立即触发；`agent/error` 则用于兜底捕获没有生成持久化失败回合记录的实时错误。
+
+触发时，插件会分离当前 Session header 与事件列表、记录 Loader inventory，并执行有界、只读的 Git 命令。它不会读取未跟踪文件内容，不经过 shell，不运行 Git hook，也不启用 textconv。每条 Git 命令都有独立输出预算。
+
+如果失败携带 JavaScript 栈，插件会解析栈帧并查找相邻的本地 source map。映射文件读取有字节上限，且永不访问网络。归档同时保留结构化栈帧，以及带可用源码上下文的 Markdown 版本。
+
+所有证据都在组装 ZIP 前经过脱敏。原始 Session Log、仓库和错误栈不会被改写。
+
+## 发布路线
+
+当前版本聚焦于忠实的本地采集和稳定的证据格式。后续工作在公开 [Issue Tracker](https://github.com/YiHarvest/dsh-failure-capsule/issues) 中跟踪；可能的方向包括更丰富的失败关联、更多证据适配器，以及不削弱本地优先安全模型的阅读工具。
+
+兼容性声明必须对应可复现测试和明确的 Harness 版本。未来的 Harness 预发布版只有在本包完成验证后才会列入支持范围。
+
+## 隐私
+
+Failure Capsule 没有网络客户端和遥测后端。正常运行时只读取本地 Session 状态、Loader 元数据、选定的运行时信息、本地 source map 和有界 Git 输出，然后把 ZIP 写入配置的本地目录。
+
+导出副本会脱敏：
+
+- 敏感对象字段和环境变量赋值；
+- Bearer 与 Basic 授权值；
+- 常见 provider、GitHub、npm 与 AWS 凭据形式；
+- URL 中嵌入的凭据；
+- 私钥块；
+- 本机 home 目录路径。
+
+脱敏报告只包含按规则统计的数量，从不保存匹配到的秘密。脱敏是纵深防御，不能证明任意源码 diff 或自由文本中绝对不存在业务秘密。把 capsule 分享到原信任范围之外前，请先人工检查。
+
+采集限制同时保护 Agent 循环和最终产物。默认时间线最多 80 条事件，每条 Git 命令最多 512 KiB，单个 source map 最多读取 4 MiB。采集失败只产生 Harness warning，不会替换原始 Agent 错误。
 
 ## 配置
 
-`cordis.patch.yml` 提供以下默认值。可以在 profile 的 `cordis.patch.yml` 中用同一个 row id 覆盖整段配置：
+在后续 profile patch 中用相同 id 覆盖 bundle row：
 
 ```yaml
 - id: failure-capsule
@@ -118,57 +168,57 @@ Timeline 默认最多 80 条事件。每条 Git 命令默认最多采集 512 KiB
     maxSourceMapBytes: 4194304
 ```
 
-| 字段 | 类型 | 默认值 | 作用 |
-|---|---|---:|---|
-| `outputDir` | string | `.dsh/failure-capsules` | 相对路径以 Session cwd 为基准；也可用绝对路径 |
-| `maxEvents` | integer | `80` | `1..10000`，失败点之前最多保留的事件数 |
-| `maxGitBytes` | integer | `524288` | `1024..16777216`，每条 Git 命令的输出预算 |
-| `captureGit` | boolean | `true` | 是否采集 Git 证据 |
-| `capturePlugins` | boolean | `true` | 是否采集 Loader 插件清单 |
-| `triggerOnToolError` | boolean | `true` | 失败工具结果是否触发 |
-| `triggerOnTurnFailure` | boolean | `true` | error / blocked / interrupted 回合是否触发 |
-| `triggerOnAborted` | boolean | `false` | aborted 回合是否触发 |
-| `triggerOnAgentError` | boolean | `true` | 无持久化失败边界的 live error 是否触发 |
-| `resolveSourceMaps` | boolean | `true` | 是否用本地 source map 反解压缩后的 JS 栈帧 |
-| `maxSourceMapBytes` | integer | `4194304` | `1024..67108864`，单个 source map 文件的读取预算 |
+| 字段 | 默认值 | 接受范围 |
+|---|---:|---|
+| `outputDir` | `.dsh/failure-capsules` | 非空相对或绝对路径，不得包含 NUL |
+| `maxEvents` | `80` | `1..10000` 的整数 |
+| `maxGitBytes` | `524288` | `1024..16777216` 的整数 |
+| `captureGit` | `true` | 布尔值 |
+| `capturePlugins` | `true` | 布尔值 |
+| `triggerOnToolError` | `true` | 布尔值 |
+| `triggerOnTurnFailure` | `true` | 布尔值 |
+| `triggerOnAborted` | `false` | 布尔值 |
+| `triggerOnAgentError` | `true` | 布尔值 |
+| `resolveSourceMaps` | `true` | 布尔值 |
+| `maxSourceMapBytes` | `4194304` | `1024..67108864` 的整数 |
 
-错误配置在插件加载时直接失败，不静默回退。相同 Session Event 在一个插件生命周期内只生成一次；`agent/error` 会短暂等待对应的 `turn/end`，避免同一失败重复打包。
+无效配置会让插件加载失败，不会静默改变行为。
 
-## 开发与验证
+## Capsule 内容
 
-需要 Node `^22.19.0 || >=24.0.0`：
+```text
+failure-capsule.zip
+├── manifest.json              schema、触发点、文件索引与脱敏统计
+├── failure.json               结构化失败身份
+├── timeline.jsonl             截止失败点的有界事件窗口
+├── diagnosis.md               确定性、无模型的排查入口
+├── runtime.json               Node、OS、架构与项目包信息
+├── plugins.json               Loader 条目、启用状态与 fiber 阶段
+├── redaction-report.json      安全的规则替换计数
+├── stack-trace.json           可用时的解析与源码映射栈帧
+├── stack-trace.md             可读栈帧与源码上下文
+├── session/header.json        Session cwd、谱系与格式版本
+└── git/
+    ├── head.txt
+    ├── branch.txt
+    ├── status.txt
+    ├── recent-commits.txt
+    ├── working-tree.patch
+    └── index.patch
+```
 
-```sh
+## 参与贡献
+
+需要 Node `^22.19.0 || >=24.0.0`。本地验证命令：
+
+```bash
 npm install
 npm run check
-npm pack
+npm pack --dry-run
 ```
 
-测试覆盖脱敏、故障分类、配置边界、Git 采集预算、source map 栈帧反解、ZIP 确定性、原子写入和路径安全。发布包的 `prepack` 会重新执行 typecheck、测试与构建。
+`npm run check` 会执行严格类型检查、全部测试和生产构建。创建包前，`prepack` 会重复同一组检查。
 
-从本地 tarball 验证真实 profile 安装：
+## 许可证
 
-```sh
-npm pack
-dsh plugin --profile web add ./dsh-failure-capsule-0.2.1.tgz
-dsh --profile web --dump-config
-```
-
-## 发布 GitHub Release
-
-合并到 `main` 并确认 CI 通过后，创建与 `package.json` 版本一致的标签：
-
-```sh
-git tag -a v0.2.1 -m "v0.2.1"
-git push origin v0.2.1
-```
-
-标签会触发 Release 工作流，重新执行完整检查，生成经过 `npm pack` 验证的 `.tgz`，并创建带自动发行说明的 GitHub Release。工作流会拒绝与 `package.json` 版本不一致的标签。
-
-## 生态发现
-
-仓库使用 `dsh-plugin` topic，并以 `package.json` 的 `dsh.bundle.patch` 作为标准安装入口，因此会被 [Awesome DSH Plugins Radar](https://github.com/AdamPlatin123/awesome-dsh-plugins) 自动发现。收录只代表可发现；兼容性和安全性仍应以可复现测试与源码审查为准。
-
-## 许可
-
-[MIT](LICENSE)
+[MIT](LICENSE) © 2026-present [YiHarvest](https://github.com/YiHarvest)
