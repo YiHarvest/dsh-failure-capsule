@@ -11,7 +11,7 @@
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-0.1.2--alpha.2-4f46e5)](https://github.com/deepseek-ai/deepseek-harness)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-[npm](https://www.npmjs.com/package/dsh-failure-capsule) · [更新记录](CHANGELOG.md) · [English](README.en.md)
+[npm](https://www.npmjs.com/package/dsh-failure-capsule) · [GitHub Packages](https://github.com/users/YiHarvest/packages?repo_name=dsh-failure-capsule) · [更新记录](CHANGELOG.md) · [English](README.en.md)
 
 </div>
 
@@ -26,6 +26,13 @@ Web 和 headless 是彼此独立的 profile。需要在哪个 profile 捕获失�
 ```bash
 dsh plugin --profile web add dsh-failure-capsule
 dsh plugin --profile headless add dsh-failure-capsule
+```
+
+同一版本也会以 `@yiharvest/dsh-failure-capsule` 发布到 GitHub Packages。先使用具备 `read:packages` 权限的 classic personal access token 登录，再安装 scoped bundle：
+
+```bash
+npm login --scope=@yiharvest --auth-type=legacy --registry=https://npm.pkg.github.com
+dsh plugin --profile web add @yiharvest/dsh-failure-capsule
 ```
 
 确认组合层已经生效：
@@ -90,6 +97,9 @@ Profile 安装是持久的，但各 profile 彼此独立。在 `web` 安装不�
 ```bash
 # 从 npm 安装
 dsh plugin --profile web add dsh-failure-capsule
+
+# 或在 npm login 后从 GitHub Packages 安装 scoped 版本
+dsh plugin --profile web add @yiharvest/dsh-failure-capsule
 
 # 验证最终组合配置
 dsh --profile web --dump-config

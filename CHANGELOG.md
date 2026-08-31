@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased
+
+- Publish each tagged release to GitHub Packages as `@yiharvest/dsh-failure-capsule` while preserving the unscoped npm package, with manual backfill support for existing tags.
+
 ## 0.2.2 - 2026-08-31
 
 - Verify the plugin against DeepSeek Harness `0.1.2-alpha.2`, including its current `session/event`, `agent/error`, and Loader inventory interfaces.
