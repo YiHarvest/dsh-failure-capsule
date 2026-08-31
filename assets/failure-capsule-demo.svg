@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+  <title id="title">Failure Capsule evidence flow</title>
+  <desc id="desc">A failed DeepSeek Harness tool call is collected, redacted locally, and sealed into a ZIP containing a timeline, Git state, runtime details, plugins, and a resolved stack trace.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#07111f"/><stop offset="0.55" stop-color="#0b1930"/><stop offset="1" stop-color="#111b2c"/></linearGradient>
+    <linearGradient id="capsule" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6b6b"/><stop offset="0.48" stop-color="#f97316"/><stop offset="0.5" stop-color="#1d4ed8"/><stop offset="1" stop-color="#38bdf8"/></linearGradient>
+    <linearGradient id="zip" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22c55e"/><stop offset="1" stop-color="#14b8a6"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity="0.35"/></filter>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5 0 10z" fill="#64748b"/></marker>
+  </defs>
+  <rect width="1200" height="520" rx="28" fill="url(#background)"/>
+  <circle cx="590" cy="245" r="170" fill="#2563eb" opacity="0.08" filter="url(#glow)"/>
+  <path d="M382 246H486M710 246H814" stroke="#64748b" stroke-width="3" stroke-dasharray="8 10" marker-end="url(#arrow)"/>
+  <g filter="url(#shadow)">
+    <rect x="55" y="67" width="327" height="358" rx="20" fill="#0f1d31" stroke="#24344e"/><rect x="55" y="67" width="327" height="50" rx="20" fill="#14243a"/><path d="M55 97V405a20 20 0 0 0 20 20h287a20 20 0 0 0 20-20V97" fill="none" stroke="#24344e"/>
+    <circle cx="82" cy="92" r="6" fill="#fb7185"/><circle cx="103" cy="92" r="6" fill="#fbbf24"/><circle cx="124" cy="92" r="6" fill="#34d399"/>
+    <text x="218" y="97" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="14" text-anchor="middle">HARNESS EVENT</text>
+    <text x="82" y="155" fill="#7dd3fc" font-family="ui-monospace,monospace" font-size="14">tool/result</text>
+    <rect x="82" y="177" width="272" height="67" rx="10" fill="#171f30" stroke="#7f1d1d"/>
+    <text x="100" y="204" fill="#fca5a5" font-family="ui-monospace,monospace" font-size="13">isError: true</text><text x="100" y="228" fill="#cbd5e1" font-family="ui-monospace,monospace" font-size="13">command exited with code 1</text>
+    <text x="82" y="285" fill="#64748b" font-family="ui-monospace,monospace" font-size="13">turn 12 · step 4 · seq 87</text><path d="M82 312H340" stroke="#24344e"/>
+    <text x="82" y="344" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="13">timeline</text><rect x="159" y="332" width="181" height="12" rx="6" fill="#1e3a5f"/>
+    <text x="82" y="375" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="13">git + runtime + plugins</text><rect x="82" y="394" width="258" height="8" rx="4" fill="#24344e"/>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="486" y="118" width="224" height="256" rx="112" fill="#0f1d31" stroke="#334155" stroke-width="2"/><path d="M518 285a80 80 0 0 0 160 0V207a80 80 0 0 0-160 0z" fill="url(#capsule)"/><path d="M524 246h148" stroke="#f8fafc" stroke-width="5" opacity="0.8"/><path d="M558 204l28 28 51-57" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="598" y="327" fill="#fff" font-family="Inter,ui-sans-serif,system-ui,sans-serif" font-size="16" font-weight="700" text-anchor="middle">REDACTED LOCALLY</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="814" y="67" width="331" height="358" rx="20" fill="#0f1d31" stroke="#24344e"/><rect x="814" y="67" width="331" height="50" rx="20" fill="#14243a"/><text x="979" y="97" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="14" text-anchor="middle">FAILURE-CAPSULE.ZIP</text><path d="M814 117H1145" stroke="#24344e"/>
+    <g font-family="ui-monospace,monospace" font-size="14" fill="#cbd5e1"><text x="848" y="157" fill="#86efac">✓</text><text x="878" y="157">manifest.json</text><text x="848" y="194" fill="#86efac">✓</text><text x="878" y="194">timeline.jsonl</text><text x="848" y="231" fill="#86efac">✓</text><text x="878" y="231">diagnosis.md</text><text x="848" y="268" fill="#86efac">✓</text><text x="878" y="268">git/*.patch</text><text x="848" y="305" fill="#86efac">✓</text><text x="878" y="305">plugins.json</text><text x="848" y="342" fill="#86efac">✓</text><text x="878" y="342">stack-trace.md</text></g>
+    <rect x="848" y="373" width="263" height="28" rx="14" fill="url(#zip)" opacity="0.18"/><text x="979" y="392" fill="#6ee7b7" font-family="Inter,ui-sans-serif,system-ui,sans-serif" font-size="13" font-weight="700" text-anchor="middle">LOCAL · BOUNDED · SHAREABLE</text>
+  </g>
+  <text x="600" y="474" fill="#f8fafc" font-family="Inter,ui-sans-serif,system-ui,sans-serif" font-size="22" font-weight="700" text-anchor="middle">Failure evidence, sealed while the context is still warm.</text>
+  <text x="600" y="500" fill="#94a3b8" font-family="Inter,ui-sans-serif,system-ui,sans-serif" font-size="14" text-anchor="middle">No model call. No telemetry backend. No Harness core patch.</text>
+</svg>

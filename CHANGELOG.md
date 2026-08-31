@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.2.2 - 2026-08-31
+
+- Verify the plugin against DeepSeek Harness `0.1.2-alpha.2`, including its current `session/event`, `agent/error`, and Loader inventory interfaces.
+- Update the development baseline to Cordis `4.0.2`, Loader `1.0.3`, Schemastery `3.18.2`, and the Harness `0.1.2-alpha.2` packages.
+- Keep type-only Cordis, Loader, Agent, and Session relationships development-only, matching the current Harness dependency-ownership rules and avoiding false missing-peer warnings in profiles.
+- Reframe the bilingual README around the plugin workflow and add an original Failure Capsule evidence-flow SVG.
+
 ## 0.2.1 - 2026-08-18
 
 - Verify the plugin against DeepSeek Harness `0.1.0-rc.7` and update the development dependency baseline.
