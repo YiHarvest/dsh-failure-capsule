@@ -232,3 +232,4 @@ npm pack --dry-run
 ## 许可证
 
 [MIT](LICENSE) © 2026-present [YiHarvest](https://github.com/YiHarvest)
+LINUX DO: https://linux.do/latest
