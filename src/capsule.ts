@@ -15,7 +15,7 @@ import type {
 } from './types.ts'
 
 /** Package version embedded in every archive. Kept in sync by a test. */
-export const VERSION = '0.2.2'
+export const VERSION = '0.2.3'
 
 const ZIP_TIME = new Date('1980-01-01T00:00:00.000Z')
 

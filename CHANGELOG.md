@@ -4,7 +4,12 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
-- Publish each tagged release to GitHub Packages as `@yiharvest/dsh-failure-capsule` while preserving the unscoped npm package, with manual backfill support for existing tags.
+## 0.2.3 - 2026-09-09
+
+- Verify the plugin against the latest DeepSeek Harness source release, `0.1.5-alpha.2` (`b2e3b2a`), and its published npm dependency graph.
+- Replace direct access to the removed public `Session.events` property with the immutable `Session.snapshotEvents()` API introduced by the current Harness session contract.
+- Regenerate the development dependency graph at `0.1.5-alpha.2` so Agent and Session peer-contract drift is detected by focused integration tests.
+- Publish releases to both npm and GitHub Packages through the release workflow, with idempotent registry checks and automatic release tagging after a versioned change reaches `main`.
 
 ## 0.2.2 - 2026-08-31
 

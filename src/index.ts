@@ -153,7 +153,7 @@ class FailureCapsuleManager {
         id: session.id,
         ...(session.header.cwd === undefined ? {} : { cwd: session.header.cwd }),
         header: structuredClone(session.header),
-        events: [...session.events],
+        events: session.snapshotEvents(),
       },
       trigger,
       config: this.config,
