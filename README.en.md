@@ -8,14 +8,14 @@ A local-first DeepSeek Harness plugin that seals failed agent work into a redact
 
 [![npm](https://img.shields.io/npm/v/dsh-failure-capsule.svg)](https://www.npmjs.com/package/dsh-failure-capsule)
 [![CI](https://github.com/YiHarvest/dsh-failure-capsule/actions/workflows/ci.yml/badge.svg)](https://github.com/YiHarvest/dsh-failure-capsule/actions/workflows/ci.yml)
-[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-0.1.2--alpha.2-4f46e5)](https://github.com/deepseek-ai/deepseek-harness)
+[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-0.1.5--alpha.2-4f46e5)](https://github.com/deepseek-ai/deepseek-harness)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 [npm](https://www.npmjs.com/package/dsh-failure-capsule) · [GitHub Packages](https://github.com/users/YiHarvest/packages?repo_name=dsh-failure-capsule) · [Changelog](CHANGELOG.md) · [简体中文](README.md)
 
 </div>
 
-> **Release status:** v0.2.2 is a standard Profile Bundle verified against `@deepseek-ai/dsh@0.1.2-alpha.2`. It observes the native `session/event`, `agent/error`, and Loader inventory interfaces without patching Harness core. Capture stays local, does not call a model, and has no telemetry backend.
+> **Release status:** v0.2.3 is a standard Profile Bundle verified against the latest DeepSeek Harness source release, `@deepseek-ai/dsh@0.1.5-alpha.2`. It observes the native `session/event`, `agent/error`, and Loader inventory interfaces without patching Harness core. Capture stays local, does not call a model, and has no telemetry backend.
 
 <img src="assets/failure-capsule-demo.svg" alt="A failed Harness event is collected, redacted locally, and sealed into a Failure Capsule ZIP with its timeline, Git state, runtime, plugins, and resolved stack trace.">
 
@@ -106,23 +106,23 @@ dsh --profile web --dump-config
 
 # Test an unpublished local build
 npm pack
-dsh plugin --profile web add ./dsh-failure-capsule-0.2.2.tgz
+dsh plugin --profile web add ./dsh-failure-capsule-0.2.3.tgz
 ```
 
 Relative output paths resolve from the session working directory. Absolute paths are also accepted.
 
-## What v0.2.2 ships
+## What v0.2.3 ships
 
 | Shipped surface | Release evidence |
 |---|---|
-| Harness `0.1.2-alpha.2` compatibility | Type checking and real Cordis `SessionStore` integration against the published packages |
+| Harness `0.1.5-alpha.2` compatibility | Type checking against the published Agent/Session contracts and real Cordis `SessionStore` integration |
 | Failed tool, failed turn, interruption, block, and live agent-error triggers | Focused classification and lifecycle tests |
 | Bounded timeline, Git, runtime, and plugin evidence | Deterministic ZIP assertions and command-budget tests |
 | Local source-map resolution | Parsed-frame, mapped-frame, missing-map, and size-limit tests |
 | Credential and path redaction | Rule-level redaction tests plus archive-level assertions |
 | Atomic writes and unload draining | Filesystem and plugin-disposal integration coverage |
 
-The archive schema remains version `1`; v0.2.2 updates the verified Harness dependency baseline without changing the capsule format.
+The archive schema remains version `1`; v0.2.3 moves to the immutable public `Session.snapshotEvents()` API without changing the capsule format.
 
 ## How capsules work
 
