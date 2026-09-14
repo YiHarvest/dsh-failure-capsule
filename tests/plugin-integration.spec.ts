@@ -16,6 +16,13 @@ afterEach(async () => {
 })
 
 describe('Cordis plugin integration', () => {
+  it('reads both current and legacy Session history contracts', () => {
+    const events = [{ type: 'legacy' }]
+    expect(FailureCapsule.snapshotSessionEvents({ events } as never)).toEqual(events)
+    expect(FailureCapsule.snapshotSessionEvents({ snapshotEvents: () => events } as never)).toBe(events)
+    expect(() => FailureCapsule.snapshotSessionEvents({} as never)).toThrow(/no supported history reader/)
+  })
+
   it('observes a real SessionStore event and drains the ZIP write on unload', async () => {
     const root = await mkdtemp(join(tmpdir(), 'failure-capsule-plugin-'))
     roots.push(root)
