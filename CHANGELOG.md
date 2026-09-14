@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+## 0.2.4 - 2026-09-14
+
+- Verify the packed plugin against DeepSeek Harness `0.1.5-rc.2` through a real isolated DSH profile boot, failure event, shutdown drain, and ZIP-content assertion.
+- Add a compatibility reader for the current `Session.snapshotEvents()` contract and the legacy `Session.events` contract used by older Harness installations.
+- Run the packed-profile E2E as part of `npm run check` and CI, without requiring model credentials or network inference.
+
 ## 0.2.3 - 2026-09-09
 
 - Verify the plugin against the latest DeepSeek Harness source release, `0.1.5-alpha.2` (`b2e3b2a`), and its published npm dependency graph.

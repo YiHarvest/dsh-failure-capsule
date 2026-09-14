@@ -94,6 +94,19 @@ function terminalFailure(event: SessionEvent): boolean {
   }
 }
 
+interface CompatibleSessionHistory {
+  snapshotEvents?: () => readonly SessionEvent[]
+  events?: readonly SessionEvent[]
+}
+
+/** Read a detached event snapshot across the pre-0.1.5 and current Session APIs. */
+export function snapshotSessionEvents(session: Session): readonly SessionEvent[] {
+  const compatible = session as Session & CompatibleSessionHistory
+  if (typeof compatible.snapshotEvents === 'function') return compatible.snapshotEvents()
+  if (Array.isArray(compatible.events)) return [...compatible.events]
+  throw new Error('failure-capsule: this DeepSeek Harness Session exposes no supported history reader')
+}
+
 class FailureCapsuleManager {
   private readonly pending = new Set<Promise<void>>()
   private readonly seen = new Set<string>()
@@ -153,7 +166,7 @@ class FailureCapsuleManager {
         id: session.id,
         ...(session.header.cwd === undefined ? {} : { cwd: session.header.cwd }),
         header: structuredClone(session.header),
-        events: session.snapshotEvents(),
+        events: snapshotSessionEvents(session),
       },
       trigger,
       config: this.config,
