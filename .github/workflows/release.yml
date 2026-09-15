@@ -2,160 +2,241 @@ name: Release
 
 on:
   push:
-    branches:
-      - main
     tags:
       - 'v*'
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing release tag to publish to GitHub Packages
+        description: Existing v* tag to publish or resume
         required: true
         type: string
 
+concurrency:
+  group: release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+  cancel-in-progress: false
+
 permissions:
-  contents: write
-  id-token: write
-  packages: write
+  contents: read
 
 jobs:
-  release:
+  prepare:
+    name: Validate and pack
     runs-on: ubuntu-latest
+    outputs:
+      artifact: ${{ steps.release.outputs.artifact }}
+      tag: ${{ steps.release.outputs.tag }}
+      version: ${{ steps.release.outputs.version }}
     steps:
-      - name: Check out release source
+      - name: Check out release tag
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+          ref: ${{ github.ref }}
           fetch-depth: 0
-          path: source
-      - name: Check out publishing tools
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ github.sha }}
-          path: automation
-      - name: Resolve release
+      - name: Resolve and validate release
         id: release
         shell: bash
-        working-directory: source
         env:
-          REQUESTED_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         run: |
-          package_version="$(node -p "require('./package.json').version")"
-          if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
-            release_tag="v$package_version"
-            if git rev-parse --verify --quiet "refs/tags/$release_tag" >/dev/null; then
-              echo "publish=false" >> "$GITHUB_OUTPUT"
-              echo "$release_tag already exists; nothing to publish"
-              exit 0
-            fi
-          else
-            release_tag="$REQUESTED_TAG"
-          fi
-          tag_version="${release_tag#v}"
-          if [[ "$tag_version" != "$package_version" ]]; then
-            echo "Tag $release_tag does not match package version $package_version" >&2
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid release tag: $RELEASE_TAG" >&2
             exit 1
           fi
-          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
-            tag_commit="$(git rev-list -n 1 "$release_tag")"
-            checked_commit="$(git rev-parse HEAD)"
-            if [[ "$tag_commit" != "$checked_commit" ]]; then
-              echo "Tag $release_tag does not resolve to checked-out commit $checked_commit" >&2
-              exit 1
-            fi
-            if ! git merge-base --is-ancestor "$tag_commit" origin/main; then
-              echo "Tagged commit $tag_commit is not on main" >&2
-              exit 1
-            fi
+          if [[ "$GITHUB_REF" != "refs/tags/$RELEASE_TAG" ]]; then
+            echo "Release must run from refs/tags/$RELEASE_TAG, got $GITHUB_REF" >&2
+            echo "For a manual retry, select $RELEASE_TAG as the workflow ref." >&2
+            exit 1
           fi
-          echo "publish=true" >> "$GITHUB_OUTPUT"
-          echo "tag=$release_tag" >> "$GITHUB_OUTPUT"
+          if ! git show-ref --verify --quiet "refs/tags/$RELEASE_TAG"; then
+            echo "Release tag does not exist: $RELEASE_TAG" >&2
+            exit 1
+          fi
+          tag_commit="$(git rev-list -n 1 "$RELEASE_TAG")"
+          checked_commit="$(git rev-parse HEAD)"
+          if [[ "$tag_commit" != "$checked_commit" ]]; then
+            echo "Tag $RELEASE_TAG does not resolve to checked-out commit $checked_commit" >&2
+            exit 1
+          fi
+          git fetch origin main --no-tags
+          if ! git merge-base --is-ancestor "$tag_commit" origin/main; then
+            echo "Tagged commit $tag_commit is not on main" >&2
+            exit 1
+          fi
+          package_version="$(node -p "require('./package.json').version")"
+          if [[ "${RELEASE_TAG#v}" != "$package_version" ]]; then
+            echo "Tag $RELEASE_TAG does not match package version $package_version" >&2
+            exit 1
+          fi
+          echo "artifact=dsh-failure-capsule-$package_version" >> "$GITHUB_OUTPUT"
+          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
           echo "version=$package_version" >> "$GITHUB_OUTPUT"
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+          package-manager-cache: false
+      - name: Install dependencies
+        run: npm ci
+      - name: Check package
+        run: npm run check
+      - name: Pack release artifact
+        shell: bash
+        run: |
+          mkdir -p dist
+          npm pack --ignore-scripts --pack-destination dist
+          cd dist
+          sha256sum "dsh-failure-capsule-${{ steps.release.outputs.version }}.tgz" > SHA256SUMS
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ steps.release.outputs.artifact }}
+          path: |
+            dist/dsh-failure-capsule-${{ steps.release.outputs.version }}.tgz
+            dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 7
+
+  publish-npm:
+    name: Publish npm
+    needs: prepare
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Download release artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: ${{ needs.prepare.outputs.artifact }}
+          path: dist
+      - name: Verify release artifact
+        run: cd dist && sha256sum -c SHA256SUMS
       - name: Set up Node.js for npm
-        if: steps.release.outputs.publish == 'true'
         uses: actions/setup-node@v7
         with:
           node-version: 24.x
           registry-url: https://registry.npmjs.org
           package-manager-cache: false
       - name: Update npm for trusted publishing
-        if: steps.release.outputs.publish == 'true'
         run: npm install --global npm@latest
-      - name: Install dependencies
-        if: steps.release.outputs.publish == 'true'
-        working-directory: source
-        run: npm ci
-      - name: Check package
-        if: steps.release.outputs.publish == 'true'
-        working-directory: source
-        run: npm run check
-      - name: Pack release artifact
-        if: steps.release.outputs.publish == 'true'
-        id: pack
-        shell: bash
-        working-directory: source
-        run: |
-          tarball="$(npm pack --silent --ignore-scripts)"
-          echo "tarball=$GITHUB_WORKSPACE/source/$tarball" >> "$GITHUB_OUTPUT"
       - name: Publish npm package
-        if: steps.release.outputs.publish == 'true'
         env:
-          PACKAGE_VERSION: ${{ steps.release.outputs.version }}
-          TARBALL: ${{ steps.pack.outputs.tarball }}
+          PACKAGE_VERSION: ${{ needs.prepare.outputs.version }}
         shell: bash
         run: |
-          if npm view "dsh-failure-capsule@$PACKAGE_VERSION" version >/dev/null 2>&1; then
+          tarball="dist/dsh-failure-capsule-$PACKAGE_VERSION.tgz"
+          if published="$(npm view "dsh-failure-capsule@$PACKAGE_VERSION" version 2>npm-view.err)"; then
+            if [[ "$published" != "$PACKAGE_VERSION" ]]; then
+              echo "Registry returned unexpected version: $published" >&2
+              exit 1
+            fi
+            local_integrity="sha512-$(openssl dgst -sha512 -binary "$tarball" | openssl base64 -A)"
+            published_integrity="$(npm view "dsh-failure-capsule@$PACKAGE_VERSION" dist.integrity)"
+            if [[ "$published_integrity" != "$local_integrity" ]]; then
+              echo "dsh-failure-capsule@$PACKAGE_VERSION exists with different content" >&2
+              exit 1
+            fi
             echo "dsh-failure-capsule@$PACKAGE_VERSION is already published"
+          elif grep -qE 'E404|404 Not Found' npm-view.err; then
+            npm publish "$tarball" --ignore-scripts --access public --provenance
           else
-            npm publish "$TARBALL" --ignore-scripts --access public --provenance
+            cat npm-view.err >&2
+            exit 1
           fi
+
+  publish-github-package:
+    name: Publish GitHub Package
+    needs: [prepare, publish-npm]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out publishing tools
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+      - name: Download release artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: ${{ needs.prepare.outputs.artifact }}
+          path: dist
+      - name: Verify release artifact
+        run: cd dist && sha256sum -c SHA256SUMS
       - name: Stage GitHub Package
-        if: steps.release.outputs.publish == 'true'
-        id: github-package
+        id: package
         shell: bash
         env:
-          TARBALL: ${{ steps.pack.outputs.tarball }}
+          PACKAGE_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           package_directory="$RUNNER_TEMP/github-package"
           mkdir -p "$package_directory"
-          tar -xzf "$TARBALL" -C "$package_directory"
-          node automation/scripts/configure-github-package.mjs "$package_directory/package"
+          tar -xzf "dist/dsh-failure-capsule-$PACKAGE_VERSION.tgz" -C "$package_directory"
+          node scripts/configure-github-package.mjs "$package_directory/package"
           echo "directory=$package_directory/package" >> "$GITHUB_OUTPUT"
       - name: Set up GitHub Packages
-        if: steps.release.outputs.publish == 'true'
         uses: actions/setup-node@v7
         with:
           node-version: 24.x
           registry-url: https://npm.pkg.github.com
           scope: '@yiharvest'
+          package-manager-cache: false
       - name: Publish GitHub Package
-        if: steps.release.outputs.publish == 'true'
         env:
           NODE_AUTH_TOKEN: ${{ github.token }}
-          PACKAGE_DIRECTORY: ${{ steps.github-package.outputs.directory }}
+          PACKAGE_DIRECTORY: ${{ steps.package.outputs.directory }}
+          PACKAGE_VERSION: ${{ needs.prepare.outputs.version }}
         shell: bash
         run: |
-          package_version="$(node -p "require('$PACKAGE_DIRECTORY/package.json').version")"
-          if npm view "@yiharvest/dsh-failure-capsule@$package_version" version >/dev/null 2>&1; then
-            echo "@yiharvest/dsh-failure-capsule@$package_version is already published"
-          else
+          if published="$(npm view "@yiharvest/dsh-failure-capsule@$PACKAGE_VERSION" version --registry=https://npm.pkg.github.com 2>npm-view.err)"; then
+            if [[ "$published" != "$PACKAGE_VERSION" ]]; then
+              echo "Registry returned unexpected version: $published" >&2
+              exit 1
+            fi
+            echo "@yiharvest/dsh-failure-capsule@$PACKAGE_VERSION is already published"
+          elif grep -qE 'E404|404 Not Found' npm-view.err; then
             npm publish "$PACKAGE_DIRECTORY" --ignore-scripts --access public
+          else
+            cat npm-view.err >&2
+            exit 1
           fi
-      - name: Create tag and GitHub Release
-        if: steps.release.outputs.publish == 'true'
+
+  github-release:
+    name: Create GitHub Release
+    needs: [prepare, publish-npm, publish-github-package]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download release artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: ${{ needs.prepare.outputs.artifact }}
+          path: dist
+      - name: Verify release artifact
+        run: cd dist && sha256sum -c SHA256SUMS
+      - name: Create or verify GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ steps.release.outputs.tag }}
-          TARBALL: ${{ steps.pack.outputs.tarball }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          PACKAGE_VERSION: ${{ needs.prepare.outputs.version }}
         shell: bash
-        working-directory: source
         run: |
-          if ! git rev-parse --verify --quiet "refs/tags/$RELEASE_TAG" >/dev/null; then
-            git tag "$RELEASE_TAG"
-            git push origin "$RELEASE_TAG"
-          fi
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+          tarball="dist/dsh-failure-capsule-$PACKAGE_VERSION.tgz"
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "GitHub Release $RELEASE_TAG already exists"
+            assets="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
+            if ! grep -qxF "$(basename "$tarball")" <<<"$assets"; then
+              gh release upload "$RELEASE_TAG" "$tarball" --repo "$GITHUB_REPOSITORY"
+            fi
+            if ! grep -qxF SHA256SUMS <<<"$assets"; then
+              gh release upload "$RELEASE_TAG" dist/SHA256SUMS --repo "$GITHUB_REPOSITORY"
+            fi
           else
-            gh release create "$RELEASE_TAG" "$TARBALL" --verify-tag --generate-notes --title "$RELEASE_TAG"
+            gh release create "$RELEASE_TAG" "$tarball" dist/SHA256SUMS \
+              --repo "$GITHUB_REPOSITORY" \
+              --verify-tag \
+              --generate-notes \
+              --title "$RELEASE_TAG"
           fi
