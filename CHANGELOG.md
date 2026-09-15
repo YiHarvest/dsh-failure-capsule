@@ -2,10 +2,10 @@
 
 All notable changes to this project are documented in this file.
 
-## Unreleased
-
 ## 0.2.4 - 2026-09-14
 
+- Make releases tag-driven and resumable, with separate validation, npm, GitHub Packages, and GitHub Release jobs sharing one verified tarball.
+- Bind npm trusted publishing to the protected `release` environment instead of attempting a publish on every push to `main`.
 - Verify the packed plugin against DeepSeek Harness `0.1.5-rc.2` through a real isolated DSH profile boot, failure event, shutdown drain, and ZIP-content assertion.
 - Add a compatibility reader for the current `Session.snapshotEvents()` contract and the legacy `Session.events` contract used by older Harness installations.
 - Run the packed-profile E2E as part of `npm run check` and CI, without requiring model credentials or network inference.
