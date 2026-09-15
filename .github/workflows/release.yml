@@ -125,7 +125,7 @@ jobs:
           PACKAGE_VERSION: ${{ needs.prepare.outputs.version }}
         shell: bash
         run: |
-          tarball="dist/dsh-failure-capsule-$PACKAGE_VERSION.tgz"
+          tarball="./dist/dsh-failure-capsule-$PACKAGE_VERSION.tgz"
           if published="$(npm view "dsh-failure-capsule@$PACKAGE_VERSION" version 2>npm-view.err)"; then
             if [[ "$published" != "$PACKAGE_VERSION" ]]; then
               echo "Registry returned unexpected version: $published" >&2
@@ -223,7 +223,7 @@ jobs:
           PACKAGE_VERSION: ${{ needs.prepare.outputs.version }}
         shell: bash
         run: |
-          tarball="dist/dsh-failure-capsule-$PACKAGE_VERSION.tgz"
+          tarball="./dist/dsh-failure-capsule-$PACKAGE_VERSION.tgz"
           if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "GitHub Release $RELEASE_TAG already exists"
             assets="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"

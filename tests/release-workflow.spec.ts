@@ -56,5 +56,6 @@ describe('release workflow', () => {
     expect(source.match(/sha256sum -c SHA256SUMS/g)).toHaveLength(3)
     expect(source).toContain('exists with different content')
     expect(source).toContain('dist.integrity')
+    expect(source.match(/tarball="\.\/dist\/dsh-failure-capsule-\$PACKAGE_VERSION\.tgz"/g)).toHaveLength(2)
   })
 })
