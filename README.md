@@ -122,13 +122,13 @@ dsh plugin --profile web add ./dsh-failure-capsule-0.2.4.tgz
 | 凭据与路径脱敏 | 规则级脱敏测试和归档级断言 |
 | 原子写入与卸载排空 | 文件系统和插件销毁集成覆盖 |
 
-归档 schema 仍为版本 `1`；当前源码优先使用不可变的 `Session.snapshotEvents()`，并兼容旧版 Harness 的 `Session.events`，没有改变 capsule 格式。
+归档 schema 仍为版本 `1`。运行时直接从 `session/event` 维护有界窗口，因此采集不再依赖同步读取完整 Session 历史。CI 还会以非阻塞 canary 检查最新发布的 Harness alpha，但不会把预发布版纳入正式支持依赖基线。
 
 ## Capsule 如何工作
 
 `session/event` 是持久化事实来源。失败工具结果与终止回合原因可以立即触发；`agent/error` 则用于兜底捕获没有生成持久化失败回合记录的实时错误。
 
-触发时，插件会分离当前 Session header 与事件列表、记录 Loader inventory，并执行有界、只读的 Git 命令。它不会读取未跟踪文件内容，不经过 shell，不运行 Git hook，也不启用 textconv。每条 Git 命令都有独立输出预算。
+插件启用期间，会为每个观察到的 Session 最多保留 `maxEvents` 条持久化事件。触发时，插件会分离该有界窗口与当前 Session header、记录 Loader inventory，并执行有界、只读的 Git 命令。如果在一个已经运行的 Session 中途启用插件，它不会同步回填更早的历史。它不会读取未跟踪文件内容，不经过 shell，不运行 Git hook，也不启用 textconv。每条 Git 命令都有独立输出预算。
 
 如果失败携带 JavaScript 栈，插件会解析栈帧并查找相邻的本地 source map。映射文件读取有字节上限，且永不访问网络。归档同时保留结构化栈帧，以及带可用源码上下文的 Markdown 版本。
 

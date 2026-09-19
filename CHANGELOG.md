@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased
+
+- Retain bounded failure timelines incrementally from `session/event` instead of relying on the deprecated synchronous `Session.snapshotEvents()` history reader.
+- Verify plugin unload cleanup and preserve total observed event counts when only a bounded timeline window is retained.
+- Add a non-blocking CI compatibility canary for the latest published DeepSeek Harness alpha while keeping `0.1.5-rc.2` as the supported baseline.
+
 ## 0.2.4 - 2026-09-14
 
 - Make releases tag-driven and resumable, with separate validation, npm, GitHub Packages, and GitHub Release jobs sharing one verified tarball.
