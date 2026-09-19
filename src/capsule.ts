@@ -29,11 +29,11 @@ function json(value: unknown): string {
 }
 
 function eventWindow(request: CapsuleRequest): readonly unknown[] {
-  const events = request.session.events
-  const boundary = request.trigger.eventSeq === undefined
-    ? events.length
-    : Math.min(events.length, request.trigger.eventSeq + 1)
-  return events.slice(Math.max(0, boundary - request.config.maxEvents), boundary)
+  const eventSeq = request.trigger.eventSeq
+  const events = eventSeq === undefined
+    ? request.session.events
+    : request.session.events.filter(event => event.seq <= eventSeq)
+  return events.slice(-request.config.maxEvents)
 }
 
 function sortPlugins(plugins: readonly PluginInventoryEntry[] | undefined): readonly PluginInventoryEntry[] | undefined {
@@ -147,7 +147,7 @@ export async function buildCapsuleArchive(request: CapsuleRequest): Promise<Caps
     session: {
       id: safeTrigger.sessionId,
       ...(safeCwd.length === 0 ? {} : { cwd: safeCwd }),
-      eventCount: request.session.events.length,
+      eventCount: request.session.eventCount ?? request.session.events.length,
       capturedEventCount: safeEvents.length,
     },
     evidence: { git: git.available, plugins: plugins !== undefined, stackTrace: stackTrace !== undefined },

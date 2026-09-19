@@ -31,3 +31,26 @@ jobs:
         run: npm run check
       - name: Verify package contents
         run: npm pack --dry-run --ignore-scripts
+
+  dsh-alpha:
+    name: DSH alpha compatibility
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+      - name: Install supported dependencies
+        run: npm ci
+      - name: Install latest DSH alpha without changing the lockfile
+        run: >-
+          npm install --no-save --package-lock=false
+          @deepseek-ai/dsh@alpha
+          @deepseek-ai/dsh-agent@alpha
+          @deepseek-ai/dsh-session@alpha
+      - name: Check package against DSH alpha
+        run: npm run check
