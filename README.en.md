@@ -122,13 +122,13 @@ Relative output paths resolve from the session working directory. Absolute paths
 | Credential and path redaction | Rule-level redaction tests plus archive-level assertions |
 | Atomic writes and unload draining | Filesystem and plugin-disposal integration coverage |
 
-The archive schema remains version `1`; the current source prefers immutable `Session.snapshotEvents()` and supports the legacy Harness `Session.events` contract without changing the capsule format.
+The archive schema remains version `1`. The runtime keeps a bounded window directly from `session/event`, so capture no longer depends on synchronous access to complete Session history. A non-blocking CI canary also exercises the latest published Harness alpha without making a prerelease part of the supported dependency baseline.
 
 ## How capsules work
 
 `session/event` is the durable source. Failed tool results and terminal turn reasons can trigger immediately. `agent/error` is a live fallback for failures that never produce a durable failed-turn record.
 
-At capture time the plugin detaches the current session header and event list, records the Loader inventory, and performs bounded read-only Git commands. It never reads untracked file contents, invokes a shell, runs Git hooks, or enables text conversion. Every Git command has its own output budget.
+While enabled, the plugin retains at most `maxEvents` durable events per observed session. At capture time it detaches that bounded window and the current session header, records the Loader inventory, and performs bounded read-only Git commands. Enabling the plugin during an already-running session does not synchronously backfill older history. It never reads untracked file contents, invokes a shell, runs Git hooks, or enables text conversion. Every Git command has its own output budget.
 
 If the failure carries a JavaScript stack, the plugin parses its frames and looks for adjacent local source maps. Map reads are byte-bounded and never use the network. The archive retains both structured frames and a readable Markdown rendering with available source context.
 

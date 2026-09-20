@@ -99,7 +99,11 @@ interface CompatibleSessionHistory {
   events?: readonly SessionEvent[]
 }
 
-/** Read a detached event snapshot across the pre-0.1.5 and current Session APIs. */
+/**
+ * Read a detached event snapshot across older Session APIs.
+ * @deprecated The plugin runtime records `session/event` incrementally. This
+ * compatibility export remains only for existing library consumers.
+ */
 export function snapshotSessionEvents(session: Session): readonly SessionEvent[] {
   const compatible = session as Session & CompatibleSessionHistory
   if (typeof compatible.snapshotEvents === 'function') return compatible.snapshotEvents()
@@ -112,6 +116,8 @@ class FailureCapsuleManager {
   private readonly seen = new Set<string>()
   private readonly terminalTurns = new Set<string>()
   private readonly liveTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  private readonly timelines = new WeakMap<Session, SessionEvent[]>()
+  private readonly eventCounts = new WeakMap<Session, number>()
   private disposed = false
 
   constructor(
@@ -120,6 +126,14 @@ class FailureCapsuleManager {
   ) {}
 
   onSessionEvent(session: Session, event: SessionEvent): void {
+    const timeline = this.timelines.get(session) ?? []
+    timeline.push(event)
+    if (timeline.length > this.config.maxEvents) {
+      timeline.splice(0, timeline.length - this.config.maxEvents)
+    }
+    this.timelines.set(session, timeline)
+    this.eventCounts.set(session, Math.max(this.eventCounts.get(session) ?? 0, event.seq + 1))
+
     if (event.type === 'turn/end' && terminalFailure(event)) {
       const key = this.turnKey(session.id, event.data.turn)
       this.terminalTurns.add(key)
@@ -161,12 +175,14 @@ class FailureCapsuleManager {
     if (this.disposed || this.seen.has(identity)) return
     this.seen.add(identity)
 
+    const events = [...(this.timelines.get(session) ?? [])]
     const request: CapsuleRequest = {
       session: {
         id: session.id,
         ...(session.header.cwd === undefined ? {} : { cwd: session.header.cwd }),
         header: structuredClone(session.header),
-        events: snapshotSessionEvents(session),
+        events,
+        eventCount: this.eventCounts.get(session) ?? events.length,
       },
       trigger,
       config: this.config,

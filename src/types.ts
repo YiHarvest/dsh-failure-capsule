@@ -81,6 +81,9 @@ export interface CapsuleSession {
   id: string
   cwd?: string
   header: unknown
+  /** Total durable events observed, which may exceed the retained window. */
+  eventCount?: number
+  /** Bounded immutable event window retained by the plugin. */
   events: readonly SessionEvent[]
 }
 
