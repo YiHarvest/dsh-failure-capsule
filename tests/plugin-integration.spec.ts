@@ -39,10 +39,11 @@ describe('Cordis plugin integration', () => {
     })
     const session = ctx.sessions.create(SessionId('integration'), { meta: { cwd: root } })
     session.append('turn/start', { turn: 1 })
-    session.append('tool/call', {
+    const firstCallId = 'call-1' as never
+    const firstCall = session.append('tool/call', {
       turn: 1,
       step: 1,
-      callId: 'call-1',
+      callId: firstCallId,
       name: 'bash',
       arguments: '{}',
     })
@@ -51,17 +52,14 @@ describe('Cordis plugin integration', () => {
       step: 1,
       message: {
         id: 'result-1',
-        role: 'user',
-        source: { kind: 'tool', tool: 'bash' },
-        content: [{
-          type: 'tool-result',
-          toolCallId: 'call-1',
-          isError: true,
-          content: [{ type: 'text', text: 'integration failure' }],
-        }],
+        role: 'tool',
+        source: { kind: 'tool', callId: firstCallId },
+        toolCallId: firstCallId,
+        isError: true,
+        content: [{ type: 'text', text: 'integration failure' }],
       },
       error: { name: 'IntegrationError', code: 'TEST_FAILURE' },
-    } as never, { surfaceOp: 'append' })
+    } as never, { surfaceOp: 'append', sourceEventSeqs: [firstCall.seq] })
 
     await fiber.dispose()
     const files = await readdir(join(root, 'capsules'))
@@ -74,22 +72,27 @@ describe('Cordis plugin integration', () => {
     expect(timeline.map(event => event.seq)).toEqual([1, 2])
     expect(manifest.session).toMatchObject({ eventCount: 3, capturedEventCount: 2 })
 
+    const secondCallId = 'call-2' as never
+    const secondCall = session.append('tool/call', {
+      turn: 1,
+      step: 2,
+      callId: secondCallId,
+      name: 'bash',
+      arguments: '{}',
+    })
     session.append('tool/result', {
       turn: 1,
       step: 2,
       message: {
         id: 'result-2',
-        role: 'user',
-        source: { kind: 'tool', tool: 'bash' },
-        content: [{
-          type: 'tool-result',
-          toolCallId: 'call-2',
-          isError: true,
-          content: [{ type: 'text', text: 'failure after unload' }],
-        }],
+        role: 'tool',
+        source: { kind: 'tool', callId: secondCallId },
+        toolCallId: secondCallId,
+        isError: true,
+        content: [{ type: 'text', text: 'failure after unload' }],
       },
       error: { name: 'IntegrationError', code: 'AFTER_UNLOAD' },
-    } as never, { surfaceOp: 'append' })
+    } as never, { surfaceOp: 'append', sourceEventSeqs: [secondCall.seq] })
     expect(await readdir(join(root, 'capsules'))).toHaveLength(1)
   })
 })
