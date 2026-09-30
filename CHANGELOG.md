@@ -6,7 +6,9 @@ All notable changes to this project are documented in this file.
 
 - Retain bounded failure timelines incrementally from `session/event` instead of relying on the deprecated synchronous `Session.snapshotEvents()` history reader.
 - Verify plugin unload cleanup and preserve total observed event counts when only a bounded timeline window is retained.
-- Add a non-blocking CI compatibility canary for the latest published DeepSeek Harness alpha while keeping `0.1.5-rc.2` as the supported baseline.
+- Support DeepSeek Harness `0.2.0-rc.2` and its Session V4 event format.
+- Read failure state and text from first-class V4 tool-result messages while retaining tool-call source relationships in integration fixtures.
+- Track the Harness `next` release channel with a non-blocking CI compatibility canary.
 
 ## 0.2.4 - 2026-09-14
 

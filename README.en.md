@@ -8,14 +8,14 @@ A local-first DeepSeek Harness plugin that seals failed agent work into a redact
 
 [![npm](https://img.shields.io/npm/v/dsh-failure-capsule.svg)](https://www.npmjs.com/package/dsh-failure-capsule)
 [![CI](https://github.com/YiHarvest/dsh-failure-capsule/actions/workflows/ci.yml/badge.svg)](https://github.com/YiHarvest/dsh-failure-capsule/actions/workflows/ci.yml)
-[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-0.1.5--rc.2-4f46e5)](https://github.com/deepseek-ai/deepseek-harness)
+[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-0.2.0--rc.2-4f46e5)](https://github.com/deepseek-ai/deepseek-harness)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 [npm](https://www.npmjs.com/package/dsh-failure-capsule) · [GitHub Packages](https://github.com/users/YiHarvest/packages?repo_name=dsh-failure-capsule) · [Changelog](CHANGELOG.md) · [简体中文](README.md)
 
 </div>
 
-> **Release status:** The current source is a standard Profile Bundle verified against DeepSeek Harness `@deepseek-ai/dsh@0.1.5-rc.2`. It observes the native `session/event`, `agent/error`, and Loader inventory interfaces without patching Harness core. Capture stays local, does not call a model, and has no telemetry backend.
+> **Release status:** The current source is a standard Profile Bundle verified against DeepSeek Harness `@deepseek-ai/dsh@0.2.0-rc.2`. It observes the native `session/event`, `agent/error`, and Loader inventory interfaces without patching Harness core. Capture stays local, does not call a model, and has no telemetry backend.
 
 <img src="assets/failure-capsule-demo.svg" alt="A failed Harness event is collected, redacted locally, and sealed into a Failure Capsule ZIP with its timeline, Git state, runtime, plugins, and resolved stack trace.">
 
@@ -115,14 +115,14 @@ Relative output paths resolve from the session working directory. Absolute paths
 
 | Shipped surface | Release evidence |
 |---|---|
-| Harness `0.1.5-rc.2` compatibility | Type checking against the published Agent/Session contracts, real Cordis integration, and a packed DSH profile boot |
+| Harness `0.2.0-rc.2` compatibility | Type checking against Session V4 and the published Agent/Session contracts, real Cordis integration, and a packed DSH profile boot |
 | Failed tool, failed turn, interruption, block, and live agent-error triggers | Focused classification and lifecycle tests |
 | Bounded timeline, Git, runtime, and plugin evidence | Deterministic ZIP assertions and command-budget tests |
 | Local source-map resolution | Parsed-frame, mapped-frame, missing-map, and size-limit tests |
 | Credential and path redaction | Rule-level redaction tests plus archive-level assertions |
 | Atomic writes and unload draining | Filesystem and plugin-disposal integration coverage |
 
-The archive schema remains version `1`. The runtime keeps a bounded window directly from `session/event`, so capture no longer depends on synchronous access to complete Session history. A non-blocking CI canary also exercises the latest published Harness alpha without making a prerelease part of the supported dependency baseline.
+The archive schema remains version `1`. The runtime keeps a bounded window directly from `session/event`, so capture no longer depends on synchronous access to complete Session history. A non-blocking CI canary also exercises the Harness `next` release channel without letting a canary failure block verification of the supported baseline.
 
 ## How capsules work
 
