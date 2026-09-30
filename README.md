@@ -8,14 +8,14 @@
 
 [![npm](https://img.shields.io/npm/v/dsh-failure-capsule.svg)](https://www.npmjs.com/package/dsh-failure-capsule)
 [![CI](https://github.com/YiHarvest/dsh-failure-capsule/actions/workflows/ci.yml/badge.svg)](https://github.com/YiHarvest/dsh-failure-capsule/actions/workflows/ci.yml)
-[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-0.1.5--rc.2-4f46e5)](https://github.com/deepseek-ai/deepseek-harness)
+[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-0.2.0--rc.2-4f46e5)](https://github.com/deepseek-ai/deepseek-harness)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 [npm](https://www.npmjs.com/package/dsh-failure-capsule) · [GitHub Packages](https://github.com/users/YiHarvest/packages?repo_name=dsh-failure-capsule) · [更新记录](CHANGELOG.md) · [English](README.en.md)
 
 </div>
 
-> **发布状态：** 当前源码是标准 Profile Bundle，已针对 DeepSeek Harness `@deepseek-ai/dsh@0.1.5-rc.2` 验证。它通过原生 `session/event`、`agent/error` 和 Loader inventory 接口工作，不修改 Harness 核心。采集只在本地进行，不调用模型，也没有遥测后端。
+> **发布状态：** 当前源码是标准 Profile Bundle，已针对 DeepSeek Harness `@deepseek-ai/dsh@0.2.0-rc.2` 验证。它通过原生 `session/event`、`agent/error` 和 Loader inventory 接口工作，不修改 Harness 核心。采集只在本地进行，不调用模型，也没有遥测后端。
 
 <img src="assets/failure-capsule-demo.svg" alt="Harness 失败事件被采集、在本地脱敏，并封装为包含时间线、Git 状态、运行时、插件和源码映射栈的 Failure Capsule ZIP。">
 
@@ -115,14 +115,14 @@ dsh plugin --profile web add ./dsh-failure-capsule-0.2.4.tgz
 
 | 已交付能力 | 发布证据 |
 |---|---|
-| Harness `0.1.5-rc.2` 兼容性 | 针对已发布 Agent/Session contracts 的类型检查、真实 Cordis 集成测试，以及打包安装后的 DSH profile 启动测试 |
+| Harness `0.2.0-rc.2` 兼容性 | 针对 Session V4 与已发布 Agent/Session contracts 的类型检查、真实 Cordis 集成测试，以及打包安装后的 DSH profile 启动测试 |
 | 工具失败、回合失败、中断、阻塞和实时 Agent 错误触发 | 聚焦的分类与生命周期测试 |
 | 有界时间线、Git、运行时和插件证据 | 确定性 ZIP 断言与命令预算测试 |
 | 本地 source map 解析 | 栈帧解析、映射、缺失映射与大小限制测试 |
 | 凭据与路径脱敏 | 规则级脱敏测试和归档级断言 |
 | 原子写入与卸载排空 | 文件系统和插件销毁集成覆盖 |
 
-归档 schema 仍为版本 `1`。运行时直接从 `session/event` 维护有界窗口，因此采集不再依赖同步读取完整 Session 历史。CI 还会以非阻塞 canary 检查最新发布的 Harness alpha，但不会把预发布版纳入正式支持依赖基线。
+归档 schema 仍为版本 `1`。运行时直接从 `session/event` 维护有界窗口，因此采集不再依赖同步读取完整 Session 历史。CI 还会以非阻塞 canary 检查 Harness 的 `next` 发布通道，但不会在 canary 失败时阻塞受支持基线的验证。
 
 ## Capsule 如何工作
 
