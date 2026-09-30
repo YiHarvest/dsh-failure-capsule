@@ -61,13 +61,14 @@ describe.skipIf(!existsSync(dshBin))('packed DSH profile', () => {
       'export function apply(ctx) {',
       '  void ctx.loader.await().then(() => {',
       "    const session = ctx.sessions.create('profile-e2e', { meta: { cwd: process.cwd() } })",
+      "    const call = session.append('tool/call', { turn: 1, step: 1, callId: 'call-1', name: 'bash', arguments: '{}' })",
       "    session.append('tool/result', {",
       '      turn: 1, step: 1,',
-      "      message: { id: 'result-1', role: 'user', source: { kind: 'tool', tool: 'bash' },",
-      "        content: [{ type: 'tool-result', toolCallId: 'call-1', isError: true,",
-      "          content: [{ type: 'text', text: 'profile e2e failure' }] }] },",
+      "      message: { id: 'result-1', role: 'tool', source: { kind: 'tool', callId: 'call-1' },",
+      "        toolCallId: 'call-1', isError: true,",
+      "        content: [{ type: 'text', text: 'profile e2e failure' }] },",
       "      error: { name: 'ProfileE2EError', code: 'PROFILE_E2E_FAILURE' },",
-      "    }, { surfaceOp: 'append' })",
+      "    }, { surfaceOp: 'append', sourceEventSeqs: [call.seq] })",
       "    setTimeout(() => process.kill(process.pid, 'SIGTERM'), 50)",
       '  })',
       '}',
@@ -99,7 +100,7 @@ describe.skipIf(!existsSync(dshBin))('packed DSH profile', () => {
     const outputDir = join(project, '.dsh', 'failure-capsules')
     const files = await readdir(outputDir)
     expect(files).toHaveLength(1)
-    expect(files[0]).toMatch(/profile-e2e_tool-error_event-0\.zip$/)
+    expect(files[0]).toMatch(/profile-e2e_tool-error_event-1\.zip$/)
     const archive = unzipSync(await readFile(join(outputDir, files[0]!)))
     const failure = JSON.parse(new TextDecoder().decode(archive['failure.json'])) as { kind: string; error?: { code: string } }
     expect(failure).toMatchObject({ kind: 'tool-error', error: { code: 'PROFILE_E2E_FAILURE' } })

@@ -8,7 +8,7 @@ function shortened(value: string, maximum = 500): string {
 }
 
 function toolResultText(event: SessionEvent<'tool/result'>): string {
-  const content = event.data.message.content[0].content
+  const content = event.data.message.content
     .flatMap(block => block.type === 'text' ? [block.text] : [])
     .join('\n')
   return shortened(content.length === 0 ? 'Tool returned an error result.' : content)
@@ -22,8 +22,7 @@ export function classifySessionFailure(
 ): FailureTrigger | undefined {
   const config = resolveConfig(inputConfig)
   if (event.type === 'tool/result') {
-    const block = event.data.message.content[0]
-    if (!config.triggerOnToolError || block.isError !== true) return undefined
+    if (!config.triggerOnToolError || event.data.message.isError !== true) return undefined
     const identity = event.data.error
     return {
       kind: 'tool-error',
